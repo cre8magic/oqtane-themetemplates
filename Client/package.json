@@ -1,0 +1,23 @@
+{
+  "name": "[Owner].Cre8magic-Theme-[Theme]",
+  "version": "01.00.00",
+  "main": "(none)",
+  "scripts": {
+    "dev": "vite build --mode dev",
+    "build": "vite build",
+    "watch": "vite build --watch"
+  },
+  "author": "2sic internet solutions",
+  "license": "MIT",
+  "dependencies": {
+    "bootstrap": "^5.3.3"
+  },
+  "devDependencies": {
+    "autoprefixer": "^10.4.7",
+    "rollup-plugin-copy": "^3.5.0",
+    "sass": "^1.58.0",
+    "typescript": "^5.0.0",
+    "vite": "^6.1.0",
+    "vite-plugin-static-copy": "^2.3.0"
+  }
+}

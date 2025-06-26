@@ -1,0 +1,41 @@
+@namespace [Owner].Cre8magic.Theme.[Theme]
+@inherits ContainerBase
+@inject ISettingService SettingService
+
+@* @if (_title && ModuleState.Title != "-")
+{
+<div class="row px-4">
+    <div class="d-flex flex-nowrap">
+        <ModuleActions />
+    </div>
+    <hr class="app-rule" />
+</div>
+}
+else
+{ *@
+<ModuleActions />
+@* } *@
+<div class="row">
+    <ModuleInstance />
+</div>
+
+@code {
+    public override string Name => "Cre8magic [Theme] - Header";
+
+    private bool _title = false;
+
+    protected override void OnParametersSet()
+    {
+        try
+        {
+
+            _title = bool.Parse(SettingService.GetSetting(ModuleState.Settings, GetType().Namespace + ":Title", "true"));
+
+        }
+        catch
+        {
+            // error loading container settings
+        }
+    }
+
+}

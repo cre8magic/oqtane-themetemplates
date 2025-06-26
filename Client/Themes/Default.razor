@@ -1,0 +1,80 @@
+@namespace [Owner].Cre8magic.Theme.[Theme]
+@using [Owner].Cre8magic.Theme.[Theme].Client.Themes
+@inherits ThemeBase
+@inject ISettingService SettingService
+
+@code {
+    public override string Name => "Default";
+
+    public override string Panes => PaneNames.Default + ",Header";
+
+    [Parameter]
+    public string Variant { get; set; } = "default";
+
+    private bool _login = true;
+    private bool _register = true;
+    private string _footerHtml = "";
+    private string _themeCss = "";
+
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+    }
+
+    protected override void OnParametersSet()
+    {
+        try
+        {
+            var settings = SettingService.MergeSettings(PageState.Site.Settings, PageState.Page.Settings);
+            _login = bool.Parse(SettingService.GetSetting(settings, GetType().Namespace + ":Login", "true"));
+            _register = bool.Parse(SettingService.GetSetting(settings, GetType().Namespace + ":Register", "true"));
+            _footerHtml = SettingService.GetSetting(settings, GetType().Namespace + ":FooterHtml", ""); 
+            _themeCss = SettingService.GetSetting(settings, GetType().Namespace + ":ThemeCss", "");
+        }
+        catch
+        {
+            // error loading theme settings
+        }
+    }
+}
+
+@if (!string.IsNullOrWhiteSpace(_themeCss)) {
+    <style>
+        @((MarkupString)_themeCss)
+    </style>
+}
+
+<div data-bs-theme ="default-theme" data-theme-variant="@Variant">
+    @* FYI: data-bs-theme is for colors/fonts; data-theme-variant is for sizing etc. *@
+    <nav id="theme-page-navigation" class="navbar navbar-dark bg-primary sticky-top">
+        <Logo /><Menu Orientation="Horizontal" />
+        <div class="controls ms-auto">
+            <div class="controls-group">
+                <UserProfile ShowRegister="@_register" />
+                <Login ShowLogin="@_login"  />
+                <ControlPanel ButtonClass="btn-outline-light" />
+            </div>
+        </div>
+    </nav>
+
+    <div id="theme-page-header-pane" class="container-xxl px-0">
+        <Pane Name="Header" />
+    </div>
+
+    <main role="main" id="theme-page-main">
+        <Pane Name="@PaneNames.Default" />
+    </main>
+
+    <footer id="theme-page-footer" class="footer">
+        @if (!string.IsNullOrWhiteSpace(_footerHtml))
+        {
+            @((MarkupString)_footerHtml)
+        }
+        else
+        {
+            @((MarkupString)ThemeConstants.DefaultFooterHtml)
+        }
+    </footer>
+
+</div>

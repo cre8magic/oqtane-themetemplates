@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
+    <metadata>
+        <id>$projectname$</id>
+        <version>[FrameworkVersion]</version>
+        <authors>[Owner].Cre8magic</authors>
+        <owners>[Owner].Cre8magic</owners>
+        <title>[Theme]</title>
+        <description>[Description]</description>
+        <copyright>[Owner].Cre8magic</copyright>
+        <requireLicenseAcceptance>false</requireLicenseAcceptance>
+        <license type="expression">MIT</license>
+        <projectUrl>https://github.com/oqtane/oqtane.framework</projectUrl>
+        <icon>icon.png</icon>
+        <tags>oqtane theme</tags>
+        <releaseNotes></releaseNotes>
+        <summary></summary>
+        <dependencies>
+            <dependency id="Oqtane.Framework" version="6.1.3" />
+        </dependencies>
+    </metadata>
+    <files>
+        <file src="..\Client\bin\Release\$targetframework$\$projectname$.Client.Oqtane.dll" target="lib\$targetframework$" />
+        <file src="..\Client\bin\Release\$targetframework$\$projectname$.Client.Oqtane.pdb" target="lib\$targetframework$" />
+        <file src="..\Client\wwwroot\**\*.*" target="wwwroot" />
+        <file src="icon.png" target="" />
+    </files>
+</package>

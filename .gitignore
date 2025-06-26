@@ -1,0 +1,5 @@
+bin/
+obj/
+InstallPackages/*.nupkg
+**/.vs/
+Client/node_modules/

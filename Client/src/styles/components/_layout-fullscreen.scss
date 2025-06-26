@@ -1,0 +1,23 @@
+/*********************************************/
+/*  _layout-fullscreen.scss                  */
+/*-------------------------------------------*/
+/*           This file is part of:           */
+/*                 cre8magic                 */
+/*            https://2shine.org/            */
+/*-------------------------------------------*/
+/*  This file defines and customizes         */
+/*  styles for fullscreen.                   */
+/*********************************************/
+
+/*layout fullscreen*/
+[data-theme-variant="fullscreen"] {
+    main#theme-page-main {
+        background-color: var(--theme-page-main-bg);
+    }
+
+    #theme-page-header-pane {
+        max-width: 100%;
+        padding-left: 0;
+        padding-right: 0;
+    }
+}
