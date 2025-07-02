@@ -1,47 +1,28 @@
-@namespace [Owner].Cre8magic.Theme.[Theme]
-@using [Owner].Cre8magic.Theme.[Theme].Client.Themes
+﻿@namespace [Owner].Theme.[Theme]
 @inherits ThemeBase
-@inject ISettingService SettingService
+@inject OqtaneSettings OqtaneSettings
 
 @code {
+    /// <summary>
+    /// Specify what layout variant to use. Will set an attribute on the wrapping div, so the CSS can adjust accordingly.
+    /// </summary>
+    [Parameter]
+    public string Variant { get; set; } = "default";
+
     public override string Name => "Default";
 
     public override string Panes => PaneNames.Default + ",Header";
 
-    [Parameter]
-    public string Variant { get; set; } = "default";
-
-    private bool _login = true;
-    private bool _register = true;
-    private string _footerHtml = "";
-    private string _themeCss = "";
-
-
-    protected override void OnInitialized()
-    {
-        base.OnInitialized();
-    }
+    private MyThemeSettings Settings { get; set; } = null!;
 
     protected override void OnParametersSet()
-    {
-        try
-        {
-            var settings = SettingService.MergeSettings(PageState.Site.Settings, PageState.Page.Settings);
-            _login = bool.Parse(SettingService.GetSetting(settings, GetType().Namespace + ":Login", "true"));
-            _register = bool.Parse(SettingService.GetSetting(settings, GetType().Namespace + ":Register", "true"));
-            _footerHtml = SettingService.GetSetting(settings, GetType().Namespace + ":FooterHtml", ""); 
-            _themeCss = SettingService.GetSetting(settings, GetType().Namespace + ":ThemeCss", "");
-        }
-        catch
-        {
-            // error loading theme settings
-        }
-    }
+        => RazorUtils.RunAndIgnoreErrors(() => Settings = new(OqtaneSettings.GetPage(PageState)));
 }
 
-@if (!string.IsNullOrWhiteSpace(_themeCss)) {
+@* Add custom Css rules if provided in the page/site settings *@
+@if (Settings.TryGetThemeCss(out var themeCss)) {
     <style>
-        @((MarkupString)_themeCss)
+        @((MarkupString)themeCss)
     </style>
 }
 
@@ -51,8 +32,8 @@
         <Logo /><Menu Orientation="Horizontal" />
         <div class="controls ms-auto">
             <div class="controls-group">
-                <UserProfile ShowRegister="@_register" />
-                <Login ShowLogin="@_login"  />
+                <UserProfile ShowRegister="@Settings.ShowRegister" />
+                <Login ShowLogin="@Settings.ShowLogin"  />
                 <ControlPanel ButtonClass="btn-outline-light" />
             </div>
         </div>
@@ -67,14 +48,7 @@
     </main>
 
     <footer id="theme-page-footer" class="footer">
-        @if (!string.IsNullOrWhiteSpace(_footerHtml))
-        {
-            @((MarkupString)_footerHtml)
-        }
-        else
-        {
-            @((MarkupString)ThemeConstants.DefaultFooterHtml)
-        }
+        @((MarkupString)Settings.FooterHtml)
     </footer>
 
 </div>

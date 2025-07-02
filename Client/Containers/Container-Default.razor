@@ -1,0 +1,39 @@
+﻿@namespace [Owner].Theme.[Theme]
+@inherits ContainerBase
+@inject OqtaneSettings OqtaneSettings
+@*
+    This is the default container for normal page contents.
+    * It has minimal styling CSS classes on the wrapping div for a clean look.
+    * It will not show a title by default, since most modules will have better ways to display titles.
+*@
+@code {
+    /// <summary>
+    /// Name of this container to be used in the UI
+    /// </summary>
+    public override string Name => "Default Container";
+
+    [field: AllowNull, MaybeNull]
+    private MyContainerSettings Settings => field ??= new(OqtaneSettings.GetModule(ModuleState));
+
+    /// <summary>
+    /// If we should show the title above the module; initialized in OnParametersSet; default is `false`.
+    /// </summary>
+    private bool ShowTitle => Settings.ShowTitle && !string.IsNullOrEmpty(ModuleState.Title);
+}
+
+<div class="container py-4">
+    @if (ShowTitle)
+    {
+        <div class="row px-4">
+            <div class="d-flex flex-nowrap">
+                <ModuleActions />
+            </div>
+        </div>
+    }
+    else
+    {
+        <ModuleActions />
+    }
+
+    <ModuleInstance />
+</div>

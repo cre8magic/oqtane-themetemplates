@@ -1,4 +1,4 @@
-# Styling with Bootstrap 5, SASS and Variables
+﻿# Styling with Bootstrap 5, SASS and Variables
 
 ## This Setup Uses Bootstrap 5 Best Practices
 

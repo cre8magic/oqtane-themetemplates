@@ -1,4 +1,4 @@
-@echo off
+﻿@echo off
 set TargetFramework=%1
 set ProjectName=%2
 

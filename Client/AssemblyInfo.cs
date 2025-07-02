@@ -1,4 +1,3 @@
-using System.Resources;
-using Microsoft.Extensions.Localization;
+﻿using Microsoft.Extensions.Localization;
 
-[assembly: RootNamespace("[Owner].Cre8magic.Theme.[Theme].Client")]
+[assembly: RootNamespace("[Owner].Theme.[Theme]")]

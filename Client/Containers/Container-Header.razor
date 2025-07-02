@@ -1,41 +1,19 @@
-@namespace [Owner].Cre8magic.Theme.[Theme]
+﻿@namespace [Owner].Theme.[Theme]
 @inherits ContainerBase
-@inject ISettingService SettingService
+@*
+    This is the container for header contents.
+    * It does not have any styling CSS classes on the wrapping div, since it should not have padding or margins.
+    * It will never show a title, since it's expected to "stick" closely to the top of the page.
+*@
 
-@* @if (_title && ModuleState.Title != "-")
-{
-<div class="row px-4">
-    <div class="d-flex flex-nowrap">
-        <ModuleActions />
-    </div>
-    <hr class="app-rule" />
-</div>
+@code {
+    /// <summary>
+    /// Name of this container to be used in the UI
+    /// </summary>
+    public override string Name => "Header Container (reduced padding)";
 }
-else
-{ *@
+
 <ModuleActions />
-@* } *@
 <div class="row">
     <ModuleInstance />
 </div>
-
-@code {
-    public override string Name => "Cre8magic [Theme] - Header";
-
-    private bool _title = false;
-
-    protected override void OnParametersSet()
-    {
-        try
-        {
-
-            _title = bool.Parse(SettingService.GetSetting(ModuleState.Settings, GetType().Namespace + ":Title", "true"));
-
-        }
-        catch
-        {
-            // error loading container settings
-        }
-    }
-
-}

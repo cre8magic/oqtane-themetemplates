@@ -1,8 +1,8 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
     <metadata>
         <id>$projectname$</id>
-        <version>[FrameworkVersion]</version>
+        <version>1.0.0</version>
         <authors>[Owner].Cre8magic</authors>
         <owners>[Owner].Cre8magic</owners>
         <title>[Theme]</title>
@@ -16,7 +16,7 @@
         <releaseNotes></releaseNotes>
         <summary></summary>
         <dependencies>
-            <dependency id="Oqtane.Framework" version="6.1.3" />
+            <dependency id="Oqtane.Framework" version="[FrameworkVersion]" />
         </dependencies>
     </metadata>
     <files>

@@ -1,4 +1,4 @@
-#!/bin/bash
+﻿#!/bin/bash
 
 TargetFramework=$1
 ProjectName=$2

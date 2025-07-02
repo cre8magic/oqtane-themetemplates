@@ -1,18 +1,72 @@
-@namespace [Owner].Cre8magic.Theme.[Theme]
-@using [Owner].Cre8magic.Theme.[Theme].Client.Themes
+﻿@namespace [Owner].Theme.[Theme]
 @inherits ModuleBase
 @implements Oqtane.Interfaces.ISettingsControl
-@inject ISettingService SettingService
+@inject OqtaneSettings OqtaneSettings
 @inject IStringLocalizer<ThemeSettings> Localizer
 @inject IStringLocalizer<SharedResources> SharedLocalizer
 @attribute [OqtaneIgnore]
 
-    <div class="container">
-        <div class="row mb-1 align-items-center">
-            <Label Class="col-sm-3" For="scope" ResourceKey="Scope" ResourceType="@resourceType" HelpText="Specify if the settings are applicable to this page or the entire site.">Setting Scope:</Label>
-            <div class="col-sm-9">
-                <select id="scope" class="form-select" value="@_scope" @onchange="(e => ScopeChanged(e))">
-                    @if (UserSecurity.IsAuthorized(PageState.User, RoleNames.Admin))
+@code {
+    /// <summary>PageId - will be set on Init</summary>
+    private int _pageId = -1;
+
+    /// <summary>Scope we're currently editing - either "site" or "page" - is set in a drop-down</summary>
+    private string _scope = "page";
+
+    /// <summary>Binders for the settings fields, allowing for easy data binding</summary>
+    private readonly SettingsEditor _editor = new();
+
+    /// <summary>Initializer / On-Load</summary>
+    protected override async Task OnInitializedAsync()
+    {
+        if (PageState.QueryString.TryGetValue("id", out var idString))
+            _pageId = int.Parse(idString);
+        await LoadSettings();
+    }
+
+    /// <summary>
+    /// Load the settings based on the current scope (site or page)
+    /// </summary>
+    private async Task LoadSettings()
+        => await RazorUtils.RunAsyncAndLogErrors(async () =>
+        {
+            var siteSettings = await OqtaneSettings.LoadSite(PageState.Site.SiteId);
+            var pageSettings = await OqtaneSettings.LoadPage(_pageId);
+
+            var isPage = _scope == "page";
+            _editor.Setup(
+                main: isPage ? pageSettings : siteSettings,
+                fallback: isPage ? siteSettings : null
+            );
+
+            await Task.Yield();
+        }, this, logger);
+
+    /// <summary>
+    /// Handle scope change event to update UI to site or page settings
+    /// </summary>
+    private async Task ScopeChanged(ChangeEventArgs eventArgs)
+        => await RazorUtils.RunAsyncAndLogErrors(async () =>
+        {
+            _scope = (string)eventArgs.Value!;
+            await LoadSettings();
+            StateHasChanged();
+        }, this, logger);
+
+    /// <summary>
+    /// Handle the save action for the settings. Will be called by the Oqtane framework.
+    /// </summary>
+    public async Task UpdateSettings()
+        => await RazorUtils.RunAsyncAndLogErrors(() => _editor.Save(KeyPrefix), this, logger);
+}
+
+<div class="container">
+    @* Choose Scope Site / Page - affects remaining fields *@
+    <div class="row mb-1 align-items-center">
+        <Label Class="col-sm-3" For="scope" ResourceKey="Scope" ResourceType="@ThemeSettingsType" HelpText="Specify if the settings are applicable to this page or the entire site.">Setting Scope:</Label>
+        <div class="col-sm-9">
+            <select id="scope" class="form-select" value="@_scope" @onchange="ScopeChanged">
+                @if (UserSecurity.IsAuthorized(PageState.User, RoleNames.Admin))
                 {
                     <option value="site">@Localizer["Site"]</option>
                 }
@@ -20,33 +74,40 @@
             </select>
         </div>
     </div>
+
+    @* Enable Login *@
     <div class="row mb-1 align-items-center">
-        <Label Class="col-sm-3" For="login" ResourceKey="Login" ResourceType="@resourceType" HelpText="Specify if a Login option should be displayed. Note that this option does not prevent the login page from being accessible via a direct url.">Show Login?</Label>
+        <Label Class="col-sm-3" For="login" ResourceKey="Login" ResourceType="@ThemeSettingsType" HelpText="Specify if a Login option should be displayed. Note that this option does not prevent the login page from being accessible via a direct url.">Show Login?</Label>
         <div class="col-sm-9">
-            <select id="login" class="form-select" @bind="@_login">
-                <option value="-">&lt;@SharedLocalizer["Not Specified"]&gt;</option>
+            <select id="login" class="form-select" @bind="@_editor[MyThemeSettings.KeyLogin].Value">
+                <option value="">&lt;@SharedLocalizer["Not Specified"]&gt;</option>
                 <option value="true">@SharedLocalizer["Yes"]</option>
                 <option value="false">@SharedLocalizer["No"]</option>
             </select>
-            @if (_scope != "site") {
-                <div class="small text-muted">Site: @_loginMerge</div>
-            }
-        </div>
-    </div>
-    <div class="row mb-1 align-items-center">
-        <Label Class="col-sm-3" For="register" ResourceKey="Register" ResourceType="@resourceType" HelpText="Specify if a Register option should be displayed. Note that this option is also dependent on the Allow Registration option in Site Settings.">Show Register?</Label>
-        <div class="col-sm-9">
-            <select id="register" class="form-select" @bind="@_register">
-                <option value="-">&lt;@SharedLocalizer["Not Specified"]&gt;</option>
-                <option value="true">@SharedLocalizer["Yes"]</option>
-                <option value="false">@SharedLocalizer["No"]</option>
-            </select>
-            @if (_scope != "site") {
-                <div class="small text-muted">Site: @_registerMerge</div>
+            @if (_editor.ShowFallback(MyThemeSettings.KeyLogin))
+            {
+                <div class="small text-muted">Site Default (if not set): @_editor.Fallback.Get(MyThemeSettings.KeyLogin)</div>
             }
         </div>
     </div>
 
+    @* Enable Register *@
+    <div class="row mb-1 align-items-center">
+        <Label Class="col-sm-3" For="register" ResourceKey="Register" ResourceType="@ThemeSettingsType" HelpText="Specify if a Register option should be displayed. Note that this option is also dependent on the Allow Registration option in Site Settings.">Show Register?</Label>
+        <div class="col-sm-9">
+            <select id="register" class="form-select" @bind="@_editor[MyThemeSettings.KeyRegister].Value">
+                <option value="">&lt;@SharedLocalizer["Not Specified"]&gt;</option>
+                <option value="true">@SharedLocalizer["Yes"]</option>
+                <option value="false">@SharedLocalizer["No"]</option>
+            </select>
+            @if (_editor.ShowFallback(MyThemeSettings.KeyRegister))
+            {
+                <div class="small text-muted">Site Default (if not set): @_editor.Fallback.Get(MyThemeSettings.KeyRegister)</div>
+            }
+        </div>
+    </div>
+    
+    @* Footer HTML *@
     <div class="accordion mb-3" id="footerHtmlAccordion">
         <div class="accordion-item">
             <h2 class="accordion-header" id="headingFooterHtml">
@@ -58,18 +119,18 @@
                 <div class="accordion-body">
                     <div class="row mb-1 align-items-center">
                         <div class="col-sm-3">
-                            <Label  For="footerHtml" ResourceKey="FooterHtml" ResourceType="@resourceType" HelpText="Here you can insert your own HTML code for the footer">Footer HTML:</Label>
-                            <button type="button" class="btn btn-secondary ms-2" @onclick="ShowDefaultFooterHtml">
+                            <Label For="footerHtml" ResourceKey="FooterHtml" ResourceType="@ThemeSettingsType" HelpText="Here you can insert your own HTML code for the footer">Footer HTML:</Label>
+                            <button type="button" class="btn btn-secondary ms-2" @onclick="() => _editor[MyThemeSettings.KeyFooterHtml].Value = DefaultFooterHtml">
                                 @SharedLocalizer["Show Default"]
                             </button>
                         </div>
                         <div class="col-sm-9">
-                            <textarea id="footerHtml" class="form-control" @bind="_footerHtml" rows="4"></textarea>
-                            @if (_scope != "site")
+                            <textarea id="footerHtml" class="form-control" @bind="@_editor[MyThemeSettings.KeyFooterHtml].Value" rows="4"></textarea>
+                            @if (_editor.ShowFallback(MyThemeSettings.KeyFooterHtml))
                             {
                                 <div class="small text-muted">
-                                    Site:
-                                    <pre>@_footerHtmlMerge</pre>
+                                    Site Default (if not set): <br />
+                                    <pre>@_editor.Fallback.Get(MyThemeSettings.KeyFooterHtml)</pre>
                                 </div>
                             }
                         </div>
@@ -79,7 +140,7 @@
         </div>
     </div>
 
-
+    @* Theme CSS *@
     <div class="accordion mb-3" id="themeColorAccordion">
         <div class="accordion-item">
             <h2 class="accordion-header" id="headingThemeColor">
@@ -90,14 +151,14 @@
             <div id="collapseThemeColor" class="accordion-collapse collapse" aria-labelledby="headingThemeColor" data-bs-parent="#themeColorAccordion">
                 <div class="accordion-body">
                     <div class="row mb-1 align-items-center">
-                        <Label class="col-sm-3" For="themeCss" ResourceKey="ThemeCss" ResourceType="@resourceType" HelpText="Here you can insert your own Theme CSS.">Theme Color:</Label>
+                        <Label class="col-sm-3" For="themeCss" ResourceKey="ThemeCss" ResourceType="@ThemeSettingsType" HelpText="Here you can insert your own Theme CSS.">Theme Color:</Label>
                         <div class="col-sm-9">
-                            <textarea id="themeCss" class="form-control" @bind="_themeCss" rows="2"></textarea>
-                            @if (_scope != "site")
+                            <textarea id="themeCss" class="form-control" @bind="_editor[MyThemeSettings.KeyThemeCss].Value" rows="2"></textarea>
+                            @if (_editor.ShowFallback(MyThemeSettings.KeyThemeCss))
                             {
                                 <div class="small text-muted">
-                                    Site:
-                                    <pre>@_themeCssMerge</pre>
+                                    Site Default (if not set): <br />
+                                    <pre>@_editor.Fallback.Get(MyThemeSettings.KeyThemeCss)</pre>
                                 </div>
                             }
                         </div>
@@ -106,149 +167,5 @@
             </div>
         </div>
     </div>
-
 </div>
 
-@code {
-    private int pageId = -1;
-    private string resourceType = "[Owner].Cre8magic.Theme.[Theme].ThemeSettings, [Owner].Cre8magic.Theme.[Theme].Client.Oqtane"; // for localization
-    private string _scope = "page";
-    private string _login = "-";
-    private string _register = "-";
-    private string _footerHtml = "";
-    private string _themeCss = "";
-
-    private string _loginMerge = "";
-    private string _registerMerge = "";
-    private string _footerHtmlMerge = "";
-    private string _themeCssMerge = "";
-
-
-    void ShowDefaultFooterHtml()
-    {
-        _footerHtml = ThemeConstants.DefaultFooterHtml;
-    }
-
-
-    protected override async Task OnInitializedAsync()
-    {
-        if (PageState.QueryString.ContainsKey("id"))
-        {
-            pageId = int.Parse(PageState.QueryString["id"]);
-        }
-
-        try
-        {
-            await LoadSettings();
-        }
-        catch (Exception ex)
-        {
-            await logger.LogError(ex, "Error Loading Settings {Error}", ex.Message);
-            AddModuleMessage("Error Loading Settings", MessageType.Error);
-        }
-    }
-
-    private async Task LoadSettings()
-    {
-
-        var settings = (_scope == "site")
-            ? await SettingService.GetSiteSettingsAsync(PageState.Site.SiteId)
-            : await SettingService.GetPageSettingsAsync(pageId);
-
-        _login = SettingService.GetSetting(settings, GetType().Namespace + ":Login", "-");
-        _register = SettingService.GetSetting(settings, GetType().Namespace + ":Register", "-");
-        _footerHtml = SettingService.GetSetting(settings, GetType().Namespace + ":FooterHtml", "");
-        _themeCss = SettingService.GetSetting(settings, GetType().Namespace + ":ThemeCss", "");
-
-        if (_scope == "page")
-        {
-            var mergedSettings = SettingService.MergeSettings(PageState.Site.Settings, settings);
-            _loginMerge = SettingService.GetSetting(mergedSettings, GetType().Namespace + ":Login", "-");
-            _registerMerge = SettingService.GetSetting(mergedSettings, GetType().Namespace + ":Register", "-");
-            _footerHtmlMerge = SettingService.GetSetting(mergedSettings, GetType().Namespace + ":FooterHtml", "");
-            _themeCssMerge = SettingService.GetSetting(mergedSettings, GetType().Namespace + ":ThemeCss", "");
-
-        }
-        await Task.Yield();
-    }
-
-    private async Task ScopeChanged(ChangeEventArgs eventArgs)
-    {
-        try
-        {
-            _scope = (string)eventArgs.Value;
-            await LoadSettings();
-            StateHasChanged();
-        }
-        catch (Exception ex)
-        {
-            await logger.LogError(ex, "Error Loading Settings {Error}", ex.Message);
-            AddModuleMessage("Error Loading Settings", MessageType.Error);
-        }
-    }
-
-    public async Task UpdateSettings()
-    {
-        try
-        {
-            var settings = (_scope == "site")
-                ? await SettingService.GetSiteSettingsAsync(PageState.Site.SiteId)
-                : await SettingService.GetPageSettingsAsync(pageId);
-
-            var id = (_scope == "site") ? PageState.Site.SiteId : pageId;
-            var entityType = (_scope == "site") ? "Site" : "Page";
-
-            if (_login != "-")
-            {
-                settings = SettingService.SetSetting(settings, GetType().Namespace + ":Login", _login);
-            }
-            else
-            {
-                await SettingService.DeleteSettingAsync(_scope, pageId, GetType().Namespace + ":Login");
-            }
-
-            if (_register != "-")
-            {
-                settings = SettingService.SetSetting(settings, GetType().Namespace + ":Register", _register);
-            }
-            else
-            {
-                await SettingService.DeleteSettingAsync(_scope, pageId, GetType().Namespace + ":Register");
-            }
-
-            if (!string.IsNullOrEmpty(_footerHtml))
-            {
-                settings = SettingService.SetSetting(settings, GetType().Namespace + ":FooterHtml", _footerHtml);
-            }
-            else
-            {
-                await SettingService.DeleteSettingAsync(entityType, id, GetType().Namespace + ":FooterHtml");
-                settings.Remove(GetType().Namespace + ":FooterHtml");
-            }
-
-            if (!string.IsNullOrEmpty(_themeCss))
-            {
-                settings = SettingService.SetSetting(settings, GetType().Namespace + ":ThemeCss", _themeCss);
-            }
-            else
-            {
-                await SettingService.DeleteSettingAsync(entityType, id, GetType().Namespace + ":ThemeCss");
-                settings.Remove(GetType().Namespace + ":ThemeCss");
-            }
-
-            if (_scope == "site")
-            {
-                await SettingService.UpdateSiteSettingsAsync(settings, PageState.Site.SiteId);
-            }
-            else
-            {
-                await SettingService.UpdatePageSettingsAsync(settings, pageId);
-            }
-        }
-        catch (Exception ex)
-        {
-            await logger.LogError(ex, "Error Saving Settings {Error}", ex.Message);
-            AddModuleMessage("Error Saving Settings", MessageType.Error);
-        }
-    }
-}
